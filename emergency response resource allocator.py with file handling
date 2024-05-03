@@ -1,0 +1,118 @@
+class Resource:
+    def __init__(self, id, type, status="Available"):
+        self.id = id
+        self.type = type
+        self.status = status
+
+    def to_string(self):
+        return f"{self.id},{self.type},{self.status}\n"
+
+class EmergencyResourceAllocator:
+    def __init__(self, file_path="resources.txt"):
+        self.file_path = file_path
+        self.resources = self.load_resources()
+
+    def load_resources(self):
+        try:
+            with open(self.file_path, "r") as file:
+                lines = file.readlines()
+                resources = []
+                for line in lines:
+                    parts = line.strip().split(",")
+                    resources.append(Resource(int(parts[0]), parts[1], parts[2]))
+                return resources
+        except FileNotFoundError:
+            return []
+
+    def save_resources(self):
+        with open(self.file_path, "w") as file:
+            for resource in self.resources:
+                file.write(resource.to_string())
+
+    def add_resource(self, resource):
+        self.resources.append(resource)
+        self.save_resources()
+
+    def get_resource_by_id(self, resource_id):
+        for resource in self.resources:
+            if resource.id == resource_id:
+                return resource
+        return None
+
+    def update_resource_status(self, resource_id, new_status):
+        resource = self.get_resource_by_id(resource_id)
+        if resource:
+            resource.status = new_status
+            self.save_resources()
+            return True
+        return False
+
+    def delete_resource_by_id(self, resource_id):
+        resource = self.get_resource_by_id(resource_id)
+        if resource:
+            self.resources.remove(resource)
+            self.save_resources()
+            return True
+        return False
+
+    def allocate_emergency_resources(self, request_id):
+        required_resource_type = request_id
+        for resource in self.resources:
+            if resource.type == required_resource_type and resource.status == "Available":
+                resource.status = "Allocated"
+                self.save_resources()
+                return f"Allocated {required_resource_type} (Resource ID: {resource.id})"
+        return f"No available {required_resource_type} found."
+
+    def monitor_resource_usage(self):
+        for resource in self.resources:
+            print(f"Resource ID: {resource.id}, Type: {resource.type}, Status: {resource.status}")
+
+def main():
+    allocator = EmergencyResourceAllocator()
+
+    while True:
+        print("\n1. Allocate Emergency Resources")
+        print("2. Monitor Resource Usage")
+        print("3. Add Resource")
+        print("4. Update Resource Status")
+        print("5. Delete Resource")
+        print("6. Exit")
+
+        try:
+            choice = input("Enter your choice: ")
+            if choice == "1":
+                request_id = input("Enter the type of emergency resource needed: ")
+                print(allocator.allocate_emergency_resources(request_id))
+            elif choice == "2":
+                print("\nResource Usage:")
+                allocator.monitor_resource_usage()
+            elif choice == "3":
+                resource_id = int(input("Enter resource ID: "))
+                resource_type = input("Enter resource type: ")
+                allocator.add_resource(Resource(resource_id, resource_type))
+                print("Resource added successfully.")
+            elif choice == "4":
+                resource_id = int(input("Enter resource ID to update status: "))
+                new_status = input("Enter new status: ")
+                if allocator.update_resource_status(resource_id, new_status):
+                    print("Resource status updated successfully.")
+                else:
+                    print("Resource not found.")
+            elif choice == "5":
+                resource_id = int(input("Enter resource ID to delete: "))
+                if allocator.delete_resource_by_id(resource_id):
+                    print("Resource deleted successfully.")
+                else:
+                    print("Resource not found.")
+            elif choice == "6":
+                print("Exiting...")
+                break
+            else:
+                print("Invalid choice. Please try again.")
+        except EOFError:
+            print("\nExiting...")
+            break
+
+if __name__ == "__main__":
+    main()
